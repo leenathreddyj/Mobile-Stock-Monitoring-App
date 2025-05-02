@@ -4,6 +4,7 @@ import 'stock_data_screen.dart';
 import 'financial_news_screen.dart';
 import '../services/firebase_auth_service.dart';
 import 'login_screen.dart';
+// Hassan and Reddy
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
