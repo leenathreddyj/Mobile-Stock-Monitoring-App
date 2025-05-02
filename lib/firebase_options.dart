@@ -44,9 +44,9 @@ class DefaultFirebaseOptions {
     apiKey: 'AIzaSyBgbRYGaMj3eOLeyCU6GufQHmOnN9pTLEw',
     appId: '1:77420022549:web:0fcf2d14f8081ba02c771c',
     messagingSenderId: '77420022549',
-    projectId: 'smarttrade-83ad0',
-    authDomain: 'smarttrade-83ad0.firebaseapp.com',
-    storageBucket: 'smarttrade-83ad0.firebasestorage.app',
+    projectId: 'tradetrackr-83ad0',
+    authDomain: 'tradetrackr-83ad0.firebaseapp.com',
+    storageBucket: 'tradetrackr-83ad0.firebasestorage.app',
     measurementId: 'G-YCMJ6R0KXH',
   );
 
@@ -54,35 +54,35 @@ class DefaultFirebaseOptions {
     apiKey: 'AIzaSyBwSbfoVlS7eJi_n4rXukH1a7okx5mWiC0',
     appId: '1:77420022549:android:4632961226ec8b382c771c',
     messagingSenderId: '77420022549',
-    projectId: 'smarttrade-83ad0',
-    storageBucket: 'smarttrade-83ad0.firebasestorage.app',
+    projectId: 'tradetrackr-83ad0',
+    storageBucket: 'tradetrackr-83ad0.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyDdOtFAuQe2cPSNuYUF2FfWHar0M-3234g',
     appId: '1:77420022549:ios:cbac6abf764d67432c771c',
     messagingSenderId: '77420022549',
-    projectId: 'smarttrade-83ad0',
-    storageBucket: 'smarttrade-83ad0.firebasestorage.app',
-    iosBundleId: 'com.example.smarttrade',
+    projectId: 'tradetrackr-83ad0',
+    storageBucket: 'tradetrackr-83ad0.firebasestorage.app',
+    iosBundleId: 'com.example.tradetrackr',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyDdOtFAuQe2cPSNuYUF2FfWHar0M-3234g',
     appId: '1:77420022549:ios:cbac6abf764d67432c771c',
     messagingSenderId: '77420022549',
-    projectId: 'smarttrade-83ad0',
-    storageBucket: 'smarttrade-83ad0.firebasestorage.app',
-    iosBundleId: 'com.example.smarttrade',
+    projectId: 'tradetrackr-83ad0',
+    storageBucket: 'tradetrackr-83ad0.firebasestorage.app',
+    iosBundleId: 'com.example.tradetrackr',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
     apiKey: 'AIzaSyBgbRYGaMj3eOLeyCU6GufQHmOnN9pTLEw',
     appId: '1:77420022549:web:00cc8628b42c8c462c771c',
     messagingSenderId: '77420022549',
-    projectId: 'smarttrade-83ad0',
-    authDomain: 'smarttrade-83ad0.firebaseapp.com',
-    storageBucket: 'smarttrade-83ad0.firebasestorage.app',
+    projectId: 'tradetrackr-83ad0',
+    authDomain: 'tradetrackr-83ad0.firebaseapp.com',
+    storageBucket: 'tradetrackr-83ad0.firebasestorage.app',
     measurementId: 'G-SZ7774Z9GD',
   );
 }

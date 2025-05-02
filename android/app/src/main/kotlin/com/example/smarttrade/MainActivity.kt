@@ -1,4 +1,4 @@
-package com.example.smarttrade
+package com.example.tradetrackr
 
 import io.flutter.embedding.android.FlutterActivity
 

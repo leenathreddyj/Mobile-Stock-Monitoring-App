@@ -1,4 +1,4 @@
-# smarttrade
+# tradetrackr
 
 A new Flutter project.
 

@@ -1,6 +1,6 @@
 {
-    "name": "smarttrade",
-    "short_name": "smarttrade",
+    "name": "tradetrackr",
+    "short_name": "tradetrackr",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
