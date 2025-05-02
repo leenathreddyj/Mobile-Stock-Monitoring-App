@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "77420022549",
+    "project_id": "smarttrade-83ad0",
+    "storage_bucket": "smarttrade-83ad0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77420022549:android:4632961226ec8b382c771c",
+        "android_client_info": {
+          "package_name": "com.example.smarttrade"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwSbfoVlS7eJi_n4rXukH1a7okx5mWiC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
