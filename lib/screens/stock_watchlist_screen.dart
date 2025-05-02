@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
-import '../widgets/stock_card.dart';
-import '../widgets/add_stock_button.dart';
-import '../services/stock_api_service.dart';
+
 import '../models/stock.dart';
+import '../services/stock_api_service.dart';
+import '../widgets/add_stock_button.dart';
+import '../widgets/stock_card.dart';
 
 class StockWatchlistScreen extends StatefulWidget {
+  const StockWatchlistScreen({super.key});
+
   @override
-  _StockWatchlistScreenState createState() => _StockWatchlistScreenState();
+  State<StockWatchlistScreen> createState() => _StockWatchlistScreenState();
 }
 
 class _StockWatchlistScreenState extends State<StockWatchlistScreen> {
   final StockApiService _stockService = StockApiService();
-  List<Stock> watchlist = [];
-  bool isLoading = true;
 
-  // Default watchlist symbols
-  final List<String> watchlistSymbols = ['AAPL', 'MSFT', 'TSLA'];
+  /// Symbols that the user is tracking.
+  final List<String> _watchlistSymbols = ['AAPL', 'MSFT', 'TSLA'];
+
+  /// Cached `Stock` data for the above symbols.
+  final List<Stock> _watchlist = [];
+
+  bool _isLoading = true;
+
+  // ─────────────────────────── lifecycle ────────────────────────────
 
   @override
   void initState() {
@@ -23,122 +31,109 @@ class _StockWatchlistScreenState extends State<StockWatchlistScreen> {
     _loadWatchlistData();
   }
 
+  // ─────────────────────────── data loading ─────────────────────────
+
   Future<void> _loadWatchlistData() async {
-    setState(() => isLoading = true);
-    try {
-      final List<Stock> loadedStocks = [];
-      for (String symbol in watchlistSymbols) {
-        final stock = await _stockService.getStockQuote(symbol);
-        loadedStocks.add(stock);
+    setState(() => _isLoading = true);
+
+    final List<Stock> loaded = [];
+    for (final symbol in _watchlistSymbols) {
+      try {
+        loaded.add(await _stockService.getStockQuote(symbol));
+      } catch (e) {
+        debugPrint('Error loading $symbol: $e');
       }
-      setState(() {
-        watchlist = loadedStocks;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading watchlist: $e')),
-      );
     }
+
+    if (!mounted) return;
+    setState(() {
+      _watchlist
+        ..clear()
+        ..addAll(loaded);
+      _isLoading = false;
+    });
   }
 
   Future<void> _addNewStock(String symbol) async {
     try {
       final stock = await _stockService.getStockQuote(symbol);
+      if (!mounted) return;
       setState(() {
-        watchlist.add(stock);
-        watchlistSymbols.add(symbol);
+        _watchlist.add(stock);
+        _watchlistSymbols.add(symbol);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding stock: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding $symbol: $e')),
+        );
+      }
     }
   }
 
+  // ───────────────────────────── UI ────────────────────────────────
+
   void _showAddStockDialog() {
     String newSymbol = '';
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Add Stock'),
+      builder: (_) => AlertDialog(
+        title: const Text('Add Stock'),
         content: TextField(
-          onChanged: (value) => newSymbol = value.toUpperCase(),
-          decoration: InputDecoration(
+          onChanged: (v) => newSymbol = v.toUpperCase(),
+          decoration: const InputDecoration(
             labelText: 'Stock Symbol',
             hintText: 'Enter stock symbol (e.g., AAPL)',
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(),
           ),
           TextButton(
+            child: const Text('Add'),
             onPressed: () {
               if (newSymbol.isNotEmpty) {
                 _addNewStock(newSymbol);
-                Navigator.pop(context);
+                Navigator.of(context).pop();
               }
             },
-            child: Text('Add'),
           ),
         ],
       ),
     );
   }
 
+  // ───────────────────────── build ─────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Stock Watchlist'),
+        title: const Text('Watchlist'),
         backgroundColor: Colors.teal[800],
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadWatchlistData,
           ),
         ],
       ),
       backgroundColor: Colors.teal[50],
-      body: isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.teal[800]))
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(color: Colors.teal[800]),
+            )
           : RefreshIndicator(
               onRefresh: _loadWatchlistData,
               child: ListView.builder(
-                itemCount: watchlist.length,
+                itemCount: _watchlist.length,
                 itemBuilder: (context, index) {
-                  final stock = watchlist[index];
+                  final stock = _watchlist[index];
                   return InkWell(
-                    onLongPress: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: Text('Remove Stock'),
-                          content:
-                              Text('Remove ${stock.symbol} from watchlist?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: Text('Cancel'),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  watchlistSymbols.remove(stock.symbol);
-                                  watchlist.removeAt(index);
-                                });
-                                Navigator.pop(context);
-                              },
-                              child: Text('Remove',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                    onLongPress: () => _showRemoveDialog(stock, index),
                     child: StockCard(
                       name: stock.name,
                       symbol: stock.symbol,
@@ -149,8 +144,34 @@ class _StockWatchlistScreenState extends State<StockWatchlistScreen> {
                 },
               ),
             ),
-      floatingActionButton: AddStockButton(
-        onTap: _showAddStockDialog,
+      floatingActionButton: AddStockButton(onTap: _showAddStockDialog),
+    );
+  }
+
+  // ───────────────────────── helpers ─────────────────────────
+
+  void _showRemoveDialog(Stock stock, int index) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove Stock'),
+        content: Text('Remove ${stock.symbol} from watchlist?'),
+        actions: [
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          TextButton(
+            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              setState(() {
+                _watchlistSymbols.remove(stock.symbol);
+                _watchlist.removeAt(index);
+              });
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
       ),
     );
   }

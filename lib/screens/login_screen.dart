@@ -4,151 +4,159 @@ import 'home_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuthService _authService = FirebaseAuthService();
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login'),
+        title: const Text('Login'),
         backgroundColor: Colors.teal[800],
       ),
       backgroundColor: Colors.teal[50],
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 50),
-              Center(
-                child: Image.asset(
-                  'assets/logo.png', // Ensure the logo exists in assets
-                  height: 120,
-                  width: 120,
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 50),
+            Center(
+              child: Image.asset(
+                'assets/logo.png', // ensure the logo exists in assets
+                height: 120,
+                width: 120,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'TradeTrackr',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[900],
+              ),
+            ),
+            const SizedBox(height: 30),
+            // Email
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                labelStyle: TextStyle(color: Colors.teal[700]),
+                border: const OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[800]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[700]!),
                 ),
               ),
-              SizedBox(height: 20),
-              Text(
-                'SmartTrade',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal[900],
+              style: const TextStyle(color: Colors.black),
+            ),
+            const SizedBox(height: 20),
+            // Password
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                labelStyle: TextStyle(color: Colors.teal[700]),
+                border: const OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[800]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[700]!),
                 ),
               ),
-              SizedBox(height: 30),
-              // Email Input
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(color: Colors.teal[700]),
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[800]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[700]!),
-                  ),
-                ),
-                style: TextStyle(
-                    color: Colors.black), // Input text color set to black
+              obscureText: true,
+              style: const TextStyle(color: Colors.black),
+            ),
+            const SizedBox(height: 20),
+            // Login button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.teal[700],
               ),
-              SizedBox(height: 20),
-              // Password Input
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.teal[700]),
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[800]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[700]!),
-                  ),
-                ),
-                obscureText: true,
-                style: TextStyle(
-                    color: Colors.black), // Input text color set to black
+              onPressed: _isLoading ? null : _handleLogin,
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Log In'),
+            ),
+            const SizedBox(height: 10),
+            // Sign‑up text button
+            TextButton(
+              onPressed: _handleSignUp,
+              child: const Text(
+                'Don\'t have an account? Sign Up',
               ),
-              SizedBox(height: 20),
-              // Login Button
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                child: _isLoading
-                    ? CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      )
-                    : Text('Log In'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                  backgroundColor: Colors.teal[700],
-                ),
-              ),
-              SizedBox(height: 10),
-              // Sign Up Option
-              TextButton(
-                onPressed: _handleSignUp,
-                child: Text(
-                  'Don\'t have an account? Sign Up',
-                  style: TextStyle(color: Colors.teal[600]),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // Login handler
-  void _handleLogin() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _handleLogin() async {
+    setState(() => _isLoading = true);
 
-    final email = emailController.text.trim();
-    final password = passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
     try {
       final user = await _authService.logIn(email, password);
 
+      if (!mounted) return; // guard context after async gap
       if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Login failed. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Login failed. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  // Sign-Up handler
+  // Sign‑up handler
   void _handleSignUp() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => RegisterScreen()),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RegisterScreen()),
     );
   }
 }

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">77420022549</string>
+    <string name="google_api_key" translatable="false">AIzaSyBwSbfoVlS7eJi_n4rXukH1a7okx5mWiC0</string>
+    <string name="google_app_id" translatable="false">1:77420022549:android:4632961226ec8b382c771c</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBwSbfoVlS7eJi_n4rXukH1a7okx5mWiC0</string>
+    <string name="google_storage_bucket" translatable="false">tradetrackr-83ad0.firebasestorage.app</string>
+    <string name="project_id" translatable="false">tradetrackr-83ad0</string>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        
+        <item name="android:windowBackground">@drawable/launch_background</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

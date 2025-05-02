@@ -1,21 +1,20 @@
-// This is a basic Flutter widget test.
+// Basic widget test for TradeTrackr.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// This uses the default counter example as a smoke‑test.
+// Update or delete once real UI tests are in place.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:tradetrackr/main.dart';
+import 'package:tradetrackr/main.dart';            // ✔ package import
+// ^ keep this line exactly as is, assuming your pubspec name is tradetrackr
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Build the app and trigger a frame.
+    await tester.pumpWidget(const StockTrackerApp());   // ← root widget name
 
-    // Verify that our counter starts at 0.
+    // Verify counter starts at 0.
     expect(find.text('0'), findsOneWidget);
     expect(find.text('1'), findsNothing);
 
@@ -23,7 +22,7 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pump();
 
-    // Verify that our counter has incremented.
+    // Verify counter has incremented.
     expect(find.text('0'), findsNothing);
     expect(find.text('1'), findsOneWidget);
   });

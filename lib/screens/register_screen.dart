@@ -1,122 +1,129 @@
 import 'package:flutter/material.dart';
-import '../services/firebase_auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../services/firebase_auth_service.dart';
+
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuthService _authService = FirebaseAuthService();
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Sign Up'),
+        title: const Text('Sign Up'),
         backgroundColor: Colors.teal[800],
       ),
       backgroundColor: Colors.teal[50],
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: 50),
-              Center(
-                child: Image.asset(
-                  'assets/logo.png',
-                  height: 120,
-                  width: 120,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 50),
+            Center(
+              child: Image.asset(
+                'assets/logo.png',
+                height: 120,
+                width: 120,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Create Account',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal[800],
+              ),
+            ),
+            const SizedBox(height: 30),
+            // Email
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                labelStyle: TextStyle(color: Colors.teal[700]),
+                border: const OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[800]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[700]!),
                 ),
               ),
-              SizedBox(height: 20),
-              Text(
-                'Create Account',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal[800],
+              style: const TextStyle(color: Colors.black),
+            ),
+            const SizedBox(height: 20),
+            // Password
+            TextField(
+              controller: _passwordController,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                labelStyle: TextStyle(color: Colors.teal[700]),
+                border: const OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[800]!),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.teal[700]!),
                 ),
               ),
-              SizedBox(height: 30),
-              // Email Input
-              TextField(
-                controller: emailController,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(color: Colors.teal[700]),
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[800]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[700]!),
-                  ),
-                ),
-                style: TextStyle(
-                    color: Colors.black), // Input text color set to black
+              obscureText: true,
+              style: const TextStyle(color: Colors.black),
+            ),
+            const SizedBox(height: 20),
+            // Sign‑up button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.teal[700],
               ),
-              SizedBox(height: 20),
-              // Password Input
-              TextField(
-                controller: passwordController,
-                decoration: InputDecoration(
-                  labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.teal[700]),
-                  border: OutlineInputBorder(),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[800]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.teal[700]!),
-                  ),
-                ),
-                obscureText: true,
-                style: TextStyle(
-                    color: Colors.black), // Input text color set to black
-              ),
-              SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _isLoading ? null : _handleSignUp,
-                child: _isLoading
-                    ? CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      )
-                    : Text('Sign Up'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 50),
-                  backgroundColor: Colors.teal[700],
-                ),
-              ),
-              SizedBox(height: 10),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'Already have an account? Log In',
-                  style: TextStyle(color: Colors.teal[600]),
-                ),
-              ),
-            ],
-          ),
+              onPressed: _isLoading ? null : _handleSignUp,
+              child: _isLoading
+                  ? const SizedBox(
+                      height: 22,
+                      width: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Sign Up'),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Already have an account? Log In'),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  void _handleSignUp() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _handleSignUp() async {
+    setState(() => _isLoading = true);
 
     try {
-      final email = emailController.text.trim();
-      final password = passwordController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
 
       if (email.isEmpty || password.isEmpty) {
         throw FirebaseAuthException(
@@ -127,40 +134,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       await _authService.signUp(email, password);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Account created successfully!')),
-        );
-        Navigator.pop(context); // Return to login screen
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created successfully!')),
+      );
+      Navigator.of(context).pop(); // back to login
     } on FirebaseAuthException catch (e) {
-      String errorMessage = 'Sign-up failed';
-
-      switch (e.code) {
-        case 'weak-password':
-          errorMessage = 'The password provided is too weak';
-          break;
-        case 'email-already-in-use':
-          errorMessage = 'An account already exists for this email';
-          break;
-        case 'invalid-email':
-          errorMessage = 'The email address is not valid';
-          break;
-        default:
-          errorMessage = e.message ?? 'An unknown error occurred';
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        'weak-password' => 'The password provided is too weak',
+        'email-already-in-use' =>
+          'An account already exists for this email',
+        'invalid-email' => 'The email address is not valid',
+        _ => e.message ?? 'An unknown error occurred',
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(msg)));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 }

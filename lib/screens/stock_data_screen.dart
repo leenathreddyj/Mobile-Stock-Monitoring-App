@@ -1,181 +1,156 @@
+import 'dart:math' show min, max;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../models/stock.dart';
+
 import '../models/candle.dart';
+import '../models/stock.dart';
 import '../services/stock_api_service.dart';
-import 'dart:math' show min, max;
 
 class StockDataScreen extends StatefulWidget {
+  const StockDataScreen({super.key});
+
   @override
-  _StockDataScreenState createState() => _StockDataScreenState();
+  State<StockDataScreen> createState() => _StockDataScreenState();
 }
 
 class _StockDataScreenState extends State<StockDataScreen> {
-  final StockApiService _stockService = StockApiService();
-  Stock? _stock;
-  List<Candle>? _candleData;
-  bool _isLoading = false;
-  String _symbol = 'AAPL'; // Default symbol
+  final StockApiService _api = StockApiService();
+  bool _loading = true;
+  String _selectedSymbol = 'AAPL';
+  Stock? _currentStock;
+  List<Candle>? _currentCandles;
 
-  final List<String> _stockSymbols = [
-    'AAPL', // Apple
-    'AMZN', // Amazon
-    'MSFT', // Microsoft
-    'GOOGL', // Google
-    'META', // Meta (Facebook)
-    'TSLA', // Tesla
-    'NVDA', // NVIDIA
-    'AMD', // AMD
-    'NFLX', // Netflix
-    'UBER' // Uber
+  static const List<String> _symbols = [
+    'AAPL', 'AMZN', 'MSFT', 'GOOGL', 'META',
+    'TSLA', 'NVDA', 'AMD',  'NFLX', 'UBER',
   ];
 
-  Map<String, List<Candle>> _allStockCandles = {};
-  Map<String, Stock> _allStocks = {};
+  final Map<String, Stock> _quoteCache = {};
+  final Map<String, List<Candle>> _candleCache = {};
 
   @override
   void initState() {
     super.initState();
-    _loadAllStockData();
+    _reloadAll();
   }
 
-  Future<void> _loadAllStockData() async {
-    setState(() => _isLoading = true);
-    try {
-      // Load data for all stocks
-      for (String symbol in _stockSymbols) {
-        try {
-          final stock = await _stockService.getStockQuote(symbol);
-          final candles =
-              await _stockService.getStockCandles(symbol, 'D', 0, 0);
-          setState(() {
-            _allStocks[symbol] = stock;
-            _allStockCandles[symbol] = candles;
-            if (symbol == _symbol) {
-              _stock = stock;
-              _candleData = candles;
-            }
-          });
-        } catch (e) {
-          print('Error loading data for $symbol: $e');
-        }
+  @override
+  void dispose() {
+    // Nothing to cancel here, but future expansions (timers, streams) go here.
+    super.dispose();
+  }
+
+  Future<void> _reloadAll() async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+
+    // Use locals to avoid intermediate setState calls
+    final Map<String, Stock> newQuotes = {};
+    final Map<String, List<Candle>> newCandles = {};
+
+    for (final symbol in _symbols) {
+      try {
+        final quote   = await _api.getStockQuote(symbol);
+        final candles = await _api.getStockCandles(symbol, 'D', 0, 0);
+        newQuotes[symbol]   = quote;
+        newCandles[symbol]  = candles;
+      } catch (_) {
+        // ignore individual failures
       }
-    } finally {
-      setState(() => _isLoading = false);
     }
+
+    // If the widget was removed while loading, don't call setState:
+    if (!mounted) return;
+
+    // Commit everything at once
+    setState(() {
+      _quoteCache
+        ..clear()
+        ..addAll(newQuotes);
+      _candleCache
+        ..clear()
+        ..addAll(newCandles);
+
+      // Refresh the currently selected symbol data:
+      _currentStock   = _quoteCache[_selectedSymbol];
+      _currentCandles = _candleCache[_selectedSymbol];
+      _loading        = false;
+    });
   }
 
-  Future<void> _loadStockData() async {
-    try {
-      final stock = await _stockService.getStockQuote(_symbol);
-      final candles = await _stockService.getStockCandles(_symbol, 'D', 0, 0);
-
-      print('Loaded ${candles.length} candles for $_symbol'); // Debug print
-      print('First candle: ${candles.firstOrNull}'); // Debug print
-
-      setState(() {
-        _stock = stock;
-        _candleData = candles;
-        _allStockCandles[_symbol] = candles;
-      });
-    } catch (e) {
-      print('Error in _loadStockData: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading stock data: $e')),
-      );
-    }
+  void _selectSymbol(String symbol) {
+    if (!mounted) return;
+    setState(() {
+      _selectedSymbol = symbol;
+      _currentStock   = _quoteCache[symbol];
+      _currentCandles = _candleCache[symbol];
+    });
   }
 
-  // Add mini chart widget for sidebar
-  Widget _buildMiniChart(String symbol) {
-    final candles = _allStockCandles[symbol];
-    if (candles == null || candles.isEmpty) return SizedBox(height: 30);
-
-    return SizedBox(
-      height: 30,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(show: false),
-          titlesData: FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: candles.asMap().entries.map((entry) {
-                return FlSpot(
-                  entry.key.toDouble(),
-                  entry.value.close,
-                );
-              }).toList(),
-              isCurved: true,
-              color: candles.first.close < candles.last.close
-                  ? Colors.green
-                  : Colors.red,
-              dotData: FlDotData(show: false),
-              belowBarData: BarAreaData(show: false),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildSidebar() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return ListView(
+      children: _symbols.map((s) {
+        final pct   = _quoteCache[s]?.percentChange ?? 0.0;
+        final color = pct >= 0 ? Colors.green : Colors.red;
+        return ListTile(
+          selected: s == _selectedSymbol,
+          title: Text(s),
+          subtitle: Text(
+            '${pct >= 0 ? '+' : ''}${pct.toStringAsFixed(2)}%',
+            style: TextStyle(color: color),
+          ),
+          onTap: () => _selectSymbol(s),
+        );
+      }).toList(),
     );
   }
 
-  // Modify the sidebar list item
-  Widget _buildStockListItem(String symbol) {
-    final stock = _allStocks[symbol];
+  Widget _buildChart() {
+    final st   = _currentStock;
+    final data = _currentCandles;
+    if (st == null || data == null || data.isEmpty) {
+      return const SizedBox(
+        height: 250,
+        child: Center(child: Text('No chart data')),
+      );
+    }
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _symbol = symbol;
-          _stock = _allStocks[symbol];
-          _candleData = _allStockCandles[symbol];
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: _symbol == symbol
-              ? Theme.of(context).primaryColor.withOpacity(0.1)
-              : null,
-          border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  symbol,
-                  style: TextStyle(
-                    fontWeight:
-                        _symbol == symbol ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                if (stock != null) ...[
-                  Icon(
-                    stock.percentChange >= 0
-                        ? Icons.arrow_upward
-                        : Icons.arrow_downward,
-                    color: stock.percentChange >= 0 ? Colors.green : Colors.red,
-                    size: 16,
-                  ),
-                ],
-              ],
-            ),
-            if (stock != null) ...[
-              Text(
-                '${stock.percentChange >= 0 ? '+' : ''}${stock.percentChange.toStringAsFixed(2)}%',
-                style: TextStyle(
-                  color: stock.percentChange >= 0 ? Colors.green : Colors.red,
-                  fontSize: 12,
-                ),
+    final prevClose = st.previousClose;
+    final curPrice  = st.price;
+    final spots     = <FlSpot>[
+      FlSpot(0, prevClose),
+      FlSpot(1, (prevClose + curPrice) / 2),
+      FlSpot(2, curPrice),
+    ];
+    final lineColor = curPrice >= prevClose ? Colors.green : Colors.red;
+    const alpha10   = 25; // ≈10% opacity
+
+    return SizedBox(
+      height: 250,
+      child: LineChart(
+        LineChartData(
+          gridData: const FlGridData(show: false),
+          titlesData: const FlTitlesData(show: false),
+          borderData: FlBorderData(show: false), // non-const constructor
+          minX: 0,
+          maxX: 2,
+          minY: min(prevClose, curPrice),
+          maxY: max(prevClose, curPrice),
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: lineColor,
+              barWidth: 2,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: lineColor.withAlpha(alpha10),
               ),
-            ],
-            SizedBox(height: 4),
-            _buildMiniChart(symbol),
+            ),
           ],
         ),
       ),
@@ -186,227 +161,45 @@ class _StockDataScreenState extends State<StockDataScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Stock List'),
+        title: const Text('Stock Data'),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
-            onPressed: _loadStockData,
+            icon: const Icon(Icons.refresh),
+            onPressed: _reloadAll,
           ),
         ],
       ),
       body: Row(
         children: [
-          // Stock List Sidebar
-          Container(
-            width: 150,
-            decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: Colors.grey.shade300)),
-            ),
-            child: ListView.builder(
-              itemCount: _stockSymbols.length,
-              itemBuilder: (context, index) =>
-                  _buildStockListItem(_stockSymbols[index]),
-            ),
-          ),
-          // Main Content
+          SizedBox(width: 120, child: _buildSidebar()),
+          const VerticalDivider(width: 1),
           Expanded(
-            child: _isLoading
-                ? Center(child: CircularProgressIndicator())
-                : _stock == null
-                    ? Center(child: Text('No data available'))
-                    : SingleChildScrollView(
-                        padding: EdgeInsets.all(16),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _currentStock == null
+                    ? const Center(child: Text('Select a stock'))
+                    : Padding(
+                        padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildStockHeader(),
-                            SizedBox(height: 24),
-                            _buildPriceChart(),
-                            SizedBox(height: 24),
-                            _buildStockDetails(),
+                            Text(
+                              _currentStock!.name,
+                              style:
+                                  Theme.of(context).textTheme.headlineSmall,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '\$${_currentStock!.price.toStringAsFixed(2)}',
+                              style:
+                                  Theme.of(context).textTheme.headlineMedium,
+                            ),
+                            const SizedBox(height: 24),
+                            _buildChart(),
                           ],
                         ),
                       ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStockHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _stock!.name,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            Text(
-              '\$${_stock!.price.toStringAsFixed(2)}',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            SizedBox(width: 16),
-            Text(
-              '${_stock!.percentChange >= 0 ? '+' : ''}${_stock!.percentChange.toStringAsFixed(2)}%',
-              style: TextStyle(
-                color: _stock!.percentChange >= 0 ? Colors.green : Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceChart() {
-    print('Building chart with data: ${_candleData?.length} candles');
-    if (_candleData == null || _candleData!.isEmpty || _stock == null) {
-      return Container(
-        height: 300,
-        child: Center(child: Text('Loading chart data...')),
-      );
-    }
-
-    // Create price movement data points
-    final currentPrice = _stock!.price;
-    final previousClose = _stock!.previousClose;
-    final priceChange = currentPrice - previousClose;
-    final color = priceChange >= 0 ? Colors.green : Colors.red;
-
-    // Create a series of points to show price movement
-    final List<FlSpot> spots = [
-      FlSpot(0, previousClose), // Previous close
-      FlSpot(1, (previousClose + currentPrice) / 2), // Midpoint
-      FlSpot(2, currentPrice), // Current price
-    ];
-
-    final minY = min(previousClose, currentPrice) * 0.9995;
-    final maxY = max(previousClose, currentPrice) * 1.0005;
-
-    return Container(
-      height: 300,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade800),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            horizontalInterval: 0.5,
-            getDrawingHorizontalLine: (value) => FlLine(
-              color: Colors.grey.shade800,
-              strokeWidth: 0.5,
-            ),
-          ),
-          titlesData: FlTitlesData(
-            show: true,
-            rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 55,
-                interval: 0.5,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    '\$${value.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Colors.grey.shade400,
-                      fontSize: 12,
-                    ),
-                  );
-                },
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 22,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  final labels = ['Previous Close', '', 'Current'];
-                  if (value >= 0 && value < labels.length) {
-                    return Text(
-                      labels[value.toInt()],
-                      style: TextStyle(
-                        color: Colors.grey.shade400,
-                        fontSize: 12,
-                      ),
-                    );
-                  }
-                  return Text('');
-                },
-              ),
-            ),
-          ),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: 2,
-          minY: minY,
-          maxY: maxY,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: color,
-              barWidth: 2,
-              isStrokeCapRound: true,
-              dotData: FlDotData(
-                show: true,
-                getDotPainter: (spot, percent, barData, index) {
-                  return FlDotCirclePainter(
-                    radius: 4,
-                    color: color,
-                    strokeWidth: 1,
-                    strokeColor: Colors.white,
-                  );
-                },
-              ),
-              belowBarData: BarAreaData(
-                show: true,
-                color: color.withOpacity(0.1),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStockDetails() {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Open', '\$${_stock!.open.toStringAsFixed(2)}'),
-            _buildDetailRow('High', '\$${_stock!.high.toStringAsFixed(2)}'),
-            _buildDetailRow('Low', '\$${_stock!.low.toStringAsFixed(2)}'),
-            _buildDetailRow('Previous Close',
-                '\$${_stock!.previousClose.toStringAsFixed(2)}'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(value),
         ],
       ),
     );

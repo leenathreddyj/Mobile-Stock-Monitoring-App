@@ -1,73 +1,75 @@
 import 'dart:convert';
+import 'dart:developer';                                 // ← add
 import 'package:http/http.dart' as http;
+
 import '../models/stock.dart';
 import '../models/candle.dart';
 
 class StockApiService {
   static const String _baseUrl = 'https://finnhub.io/api/v1';
-  static const String _apiKey = 'ctcvropr01qlc0uvo470ctcvropr01qlc0uvo47g';
+  static const String _apiKey  = 'ctcvropr01qlc0uvo470ctcvropr01qlc0uvo47g';
 
+  // ────────────────────────── quote & profile ──────────────────────────
   Future<Stock> getStockQuote(String symbol) async {
     try {
-      // Get quote data
-      final quoteResponse = await http.get(
+      final quoteRes = await http.get(
         Uri.parse('$_baseUrl/quote?symbol=$symbol&token=$_apiKey'),
       );
-      
-      // Get company profile for the name
-      final profileResponse = await http.get(
+      final profileRes = await http.get(
         Uri.parse('$_baseUrl/stock/profile2?symbol=$symbol&token=$_apiKey'),
       );
 
-      if (quoteResponse.statusCode != 200 || profileResponse.statusCode != 200) {
+      if (quoteRes.statusCode != 200 || profileRes.statusCode != 200) {
         throw Exception('Failed to load stock data');
       }
 
-      final quoteData = json.decode(quoteResponse.body);
-      final profileData = json.decode(profileResponse.body);
+      final q  = jsonDecode(quoteRes.body);
+      final cp = jsonDecode(profileRes.body);
 
       return Stock(
         symbol: symbol,
-        name: profileData['name'] ?? symbol,
-        price: quoteData['c']?.toDouble() ?? 0.0,
-        open: quoteData['o']?.toDouble() ?? 0.0,
-        high: quoteData['h']?.toDouble() ?? 0.0,
-        low: quoteData['l']?.toDouble() ?? 0.0,
-        previousClose: quoteData['pc']?.toDouble() ?? 0.0,
-        percentChange: quoteData['dp']?.toDouble() ?? 0.0,
+        name:  cp['name'] ?? symbol,
+        price:          (q['c'] as num?)?.toDouble() ?? 0,
+        open:           (q['o'] as num?)?.toDouble() ?? 0,
+        high:           (q['h'] as num?)?.toDouble() ?? 0,
+        low:            (q['l'] as num?)?.toDouble() ?? 0,
+        previousClose:  (q['pc'] as num?)?.toDouble() ?? 0,
+        percentChange:  (q['dp'] as num?)?.toDouble() ?? 0,
       );
-    } catch (e) {
-      throw Exception('Error fetching stock data: $e');
+    } catch (e, st) {
+      log('Error fetching stock data', error: e, stackTrace: st);
+      rethrow;
     }
   }
 
-  Future<List<Candle>> getStockCandles(String symbol, String resolution, int from, int to) async {
+  // ───────────────────────────── candles ─────────────────────────────
+  Future<List<Candle>> getStockCandles(
+      String symbol, String resolution, int from, int to) async {
     try {
-      // Instead of candle data, we'll use the quote endpoint which is available in free tier
-      final quoteResponse = await http.get(
+      // free‑tier: use quote endpoint to synthesize a single candle
+      final res = await http.get(
         Uri.parse('$_baseUrl/quote?symbol=$symbol&token=$_apiKey'),
       );
 
-      if (quoteResponse.statusCode == 200) {
-        final data = json.decode(quoteResponse.body);
-        // Create a single candle from the quote data
-        if (data['c'] != null) {
-          return [
-            Candle(
-              timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              open: (data['o'] as num).toDouble(),
-              high: (data['h'] as num).toDouble(),
-              low: (data['l'] as num).toDouble(),
-              close: (data['c'] as num).toDouble(),
-              volume: 0, // Volume not available in quote endpoint
-            )
-          ];
-        }
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}');
       }
-      print('No quote data available for $symbol: ${quoteResponse.body}');
-      return [];
-    } catch (e) {
-      print('Error fetching quote: $e');
+
+      final data = jsonDecode(res.body);
+      if (data['c'] == null) return [];
+
+      return [
+        Candle(
+          timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          open:  (data['o'] as num).toDouble(),
+          high:  (data['h'] as num).toDouble(),
+          low:   (data['l'] as num).toDouble(),
+          close: (data['c'] as num).toDouble(),
+          volume: 0, // volume unavailable in quote endpoint
+        )
+      ];
+    } catch (e, st) {
+      log('Error fetching quote for $symbol', error: e, stackTrace: st);
       return [];
     }
   }

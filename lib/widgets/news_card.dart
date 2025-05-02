@@ -1,46 +1,46 @@
 import 'package:flutter/material.dart';
 
+/// Card that displays a single financial‑news headline.
 class NewsCard extends StatelessWidget {
-  final String headline;
-  final String source;
-  final String snippet;
-  final VoidCallback onTap;
-
-  NewsCard({
+  const NewsCard({
+    super.key,                            // ← key parameter
     required this.headline,
     required this.source,
     required this.snippet,
     required this.onTap,
   });
 
+  final String headline;
+  final String source;
+  final String snippet;
+  final VoidCallback onTap;
+
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 headline,
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
                 source,
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 snippet,
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
             ],
           ),

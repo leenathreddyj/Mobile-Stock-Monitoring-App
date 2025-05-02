@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 import '../widgets/news_card.dart';
 import '../services/news_api_service.dart';
 import '../models/news.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class FinancialNewsScreen extends StatefulWidget {
+  const FinancialNewsScreen({super.key});
+
   @override
-  _FinancialNewsScreenState createState() => _FinancialNewsScreenState();
+  State<FinancialNewsScreen> createState() => _FinancialNewsScreenState();
 }
 
 class _FinancialNewsScreenState extends State<FinancialNewsScreen> {
@@ -23,14 +26,31 @@ class _FinancialNewsScreenState extends State<FinancialNewsScreen> {
   Future<void> _loadNews() async {
     try {
       final news = await _newsService.fetchFinancialNews();
+      if (!mounted) return; // prevent setState if widget disposed
       setState(() {
         _news = news;
         _isLoading = false;
       });
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading news: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading news: $e')),
+        const SnackBar(
+          content: Text('Could not open article.'),
+        ),
       );
     }
   }
@@ -39,19 +59,21 @@ class _FinancialNewsScreenState extends State<FinancialNewsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Financial News'),
+        title: const Text('Financial News'),
         backgroundColor: Colors.teal[800],
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh),
             onPressed: _loadNews,
           ),
         ],
       ),
       backgroundColor: Colors.teal[50],
       body: _isLoading
-          ? Center(child: CircularProgressIndicator(color: Colors.teal[800]))
-          : _news == null || _news!.isEmpty
+          ? Center(
+              child: CircularProgressIndicator(color: Colors.teal[800]),
+            )
+          : (_news == null || _news!.isEmpty)
               ? Center(
                   child: Text(
                     'No news available',
@@ -68,11 +90,7 @@ class _FinancialNewsScreenState extends State<FinancialNewsScreen> {
                         headline: article.headline,
                         source: article.source,
                         snippet: article.snippet,
-                        onTap: () async {
-                          if (await canLaunch(article.url)) {
-                            await launch(article.url);
-                          }
-                        },
+                        onTap: () => _openUrl(article.url),
                       );
                     },
                   ),

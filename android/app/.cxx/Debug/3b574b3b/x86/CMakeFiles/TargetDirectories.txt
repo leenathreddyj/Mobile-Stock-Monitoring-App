@@ -1,0 +1,2 @@
+/Users/leenathreddy/TradeTrackr/android/app/.cxx/Debug/3b574b3b/x86/CMakeFiles/edit_cache.dir
+/Users/leenathreddy/TradeTrackr/android/app/.cxx/Debug/3b574b3b/x86/CMakeFiles/rebuild_cache.dir

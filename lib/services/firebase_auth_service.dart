@@ -1,3 +1,4 @@
+import 'dart:developer';                    // for log()
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FirebaseAuthService {
@@ -5,31 +6,29 @@ class FirebaseAuthService {
 
   Future<User?> signUp(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+      final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential.user;
+      return credential.user;
     } on FirebaseAuthException catch (e) {
-      print('Sign Up Error: ${e.message}');
-      throw e;
+      log('Sign‑up error', error: e, stackTrace: e.stackTrace);
+      rethrow;                               // keeps original stack trace
     }
   }
 
   Future<User?> logIn(String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return userCredential.user;
+      return credential.user;
     } on FirebaseAuthException catch (e) {
-      print('Log In Error: ${e.message}');
-      throw e;
+      log('Log‑in error', error: e, stackTrace: e.stackTrace);
+      rethrow;
     }
   }
 
-  Future<void> logOut() async {
-    await _auth.signOut();
-  }
+  Future<void> logOut() => _auth.signOut();
 }
